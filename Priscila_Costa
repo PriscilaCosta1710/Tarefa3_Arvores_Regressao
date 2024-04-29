@@ -1,0 +1,91 @@
+rm(list = ls())#Removendo todos os objetos
+ls()#Área de trabalho vazia
+
+#Importação de dados
+
+#Carregando o pacote ISLR
+#install.packages("ISLR")
+library(ISLR)
+
+fix(Carseats)
+names(Carseats)
+
+Carseats#Conferência
+head(Carseats)#Conferindo a importação e mostrando as seis primeiras linhas
+dim(Carseats)#Mostrando o número de linhas e colunas
+View(Carseats)
+attach(Carseats)#Salvando a importação
+
+#Separação de amostras treinamento/teste
+
+library(MASS)
+
+#install.packages("tree")
+library(tree)
+
+set.seed(1)
+train=sample(1:nrow(Carseats),nrow(Carseats)/2)
+
+tree.carseats=tree(Sales~.,Carseats,subset = train)
+
+summary(tree.carseats)
+
+plot(tree.carseats)
+text(tree.carseats, pretty=0)
+
+cv.carseats=cv.tree(tree.carseats)
+plot(cv.carseats$size,cv.carseats$dev,type='b')
+
+prune.carseats=prune.tree(tree.carseats, best=5)
+plot(prune.carseats)
+text(prune.carseats, pretty=0)
+
+yhat=predict(tree.carseats, newdata=Carseats[-train,])
+carseats.test=Carseats[-train,"Sales"]
+plot(yhat, carseats.test)
+abline(0,1)
+mean((yhat-carseats.test)^2)
+
+#install.packages("randomForest")
+library(randomForest)
+set.seed(1)
+bag.carseats=randomForest(Sales~., data=Carseats, subset = train, mtry=10, importance=TRUE)
+bag.carseats
+
+yhat.bag=predict(bag.carseats, newdata=Carseats[-train,])
+plot(yhat.bag, carseats.test)
+abline(0,1)
+mean((yhat.bag-carseats.test)^2)
+
+
+bag.carseats=randomForest(Sales~., data=Carseats, subset = train, mtry=10, ntree=25)
+yhat.bag=predict(bag.carseats, newdata=Carseats[-train,])
+mean((yhat.bag-carseats.test)^2)
+
+set.seed(1)
+rf.carseats=randomForest(Sales~., data=Carseats, subset=train,mtry=4, importance=TRUE)
+yhat.rf=predict(rf.carseats, newdata=Carseats[-train,])
+mean((yhat.rf-carseats.test)^2)
+
+importance(rf.carseats)
+
+varImpPlot(rf.carseats)
+
+#install.packages("gbm")
+library(gbm)
+set.seed(1)
+boost.carseats=gbm(Sales~., data=Carseats[train,], distribution = "gaussian", n.trees = 5000, interaction.depth = 4)
+
+summary(boost.carseats)
+
+par(mfrow=c(1,2))
+plot(boost.carseats, i="Price")
+plot(boost.carseats, i="ShelveLoc")
+
+yhat.boost=predict(boost.carseats, newdata=Carseats[-train,], n.trees = 5000)
+mean((yhat.boost-carseats.test)^2)
+
+boost.carseats=gbm(Sales~., data=Carseats[train,], distribution = "gaussian", n.trees = 5000, interaction.depth = 4, shrinkage = 0.2, verbose = F)
+
+yhat.boost=predict(boost.carseats, newdata=Carseats[-train,], n.trees = 5000)
+mean((yhat.boost-carseats.test)^2)
