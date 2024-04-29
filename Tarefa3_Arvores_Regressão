@@ -1,7 +1,7 @@
 rm(list = ls())#Removendo todos os objetos
 ls()#Área de trabalho vazia
 
-#Importação de dados
+#Importação de dados 
 
 #Carregando o pacote ISLR
 #install.packages("ISLR")
