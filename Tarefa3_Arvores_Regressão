@@ -1,7 +1,7 @@
 rm(list = ls())#Removendo todos os objetos
 ls()#Área de trabalho vazia
 
-#Importação de dados 
+#Importação de dados
 
 #Carregando o pacote ISLR
 #install.packages("ISLR")
@@ -16,76 +16,102 @@ dim(Carseats)#Mostrando o número de linhas e colunas
 View(Carseats)
 attach(Carseats)#Salvando a importação
 
-#Separação de amostras treinamento/teste
+#Separação de amostras treinamento/teste (LETRA A)
 
-library(MASS)
+set.seed(1)
+train=sample(1:nrow(Carseats),nrow(Carseats)/2)
+dados_treino<-Carseats[train, ]
+dados_teste<-Carseats[-train, ]
+
+#Conferência
+dim(dados_treino)
+dim(dados_teste)
+View(dados_treino)
+View(dados_teste)
+
+#Ajuste da árvore de regressão ao conjunto de treinamento (LETRA B)
 
 #install.packages("tree")
 library(tree)
 
-set.seed(1)
-train=sample(1:nrow(Carseats),nrow(Carseats)/2)
-
+#Plotagem árvore
 tree.carseats=tree(Sales~.,Carseats,subset = train)
-
 summary(tree.carseats)
 
 plot(tree.carseats)
 text(tree.carseats, pretty=0)
 
-cv.carseats=cv.tree(tree.carseats)
-plot(cv.carseats$size,cv.carseats$dev,type='b')
+#Cálculo do Erro Médio Quadrático (MSE) e Raíz do Erro Médio Quadrático (RMSE)
+set.seed(2)
+test.predictions=predict(tree.carseats, newdata = dados_teste)
+test.mse=mean((test.predictions-dados_teste$Sales)^2)
+cat("MSE no conjunto de teste:", test.mse)
+test.rmse=sqrt(mean((test.predictions-dados_teste$Sales)^2))
+cat("RMSE no conjunto de teste:", test.rmse)
 
-prune.carseats=prune.tree(tree.carseats, best=5)
+#Validação cruzada e nível ótimo de complexidade da árvore  (LETRA C)
+
+cv.carseats=cv.tree(tree.carseats)
+plot(cv.carseats$size,cv.carseats$dev,type='b', xlab = "Número de nós da árvore de regressão",
+     ylab = "Desvio correspondente")
+abline(v=16, col="red", lty=2)
+text(16, 1100, labels=c("Menor desvio"), pos=4)
+
+cv.carseats$dev
+
+prune.carseats=prune.tree(tree.carseats, best=16)
 plot(prune.carseats)
 text(prune.carseats, pretty=0)
 
 yhat=predict(tree.carseats, newdata=Carseats[-train,])
 carseats.test=Carseats[-train,"Sales"]
-plot(yhat, carseats.test)
+plot(yhat, carseats.test, xlab = "Previsão (validação cruzada)", ylab = "Dados de teste")
 abline(0,1)
+
+#Cálculo do Erro Médio Quadrático (MSE) e Raíz do Erro Médio Quadrático (RMSE)
 mean((yhat-carseats.test)^2)
+sqrt(mean((yhat-carseats.test)^2))
+
+#Abordagem de bagging (LETRA D)
 
 #install.packages("randomForest")
 library(randomForest)
-set.seed(1)
+set.seed(3)
 bag.carseats=randomForest(Sales~., data=Carseats, subset = train, mtry=10, importance=TRUE)
 bag.carseats
 
 yhat.bag=predict(bag.carseats, newdata=Carseats[-train,])
-plot(yhat.bag, carseats.test)
+plot(yhat.bag, carseats.test, xlab = "Previsão (bagging)", ylab = "Dados de teste")
 abline(0,1)
+
+#Cálculo do Erro Médio Quadrático (MSE) e Raíz do Erro Médio Quadrático (RMSE)
 mean((yhat.bag-carseats.test)^2)
+sqrt(mean((yhat.bag-carseats.test)^2))
 
+#Determinando quais variáveis são mais importantes
+importance(bag.carseats)
+varImpPlot(bag.carseats)
 
-bag.carseats=randomForest(Sales~., data=Carseats, subset = train, mtry=10, ntree=25)
-yhat.bag=predict(bag.carseats, newdata=Carseats[-train,])
-mean((yhat.bag-carseats.test)^2)
+summary(bag.carseats)
 
-set.seed(1)
+par(mfrow=c(1,2))
+plot(bag.carseats, i="Price")
+plot(bag.carseats, i="ShelveLoc")
+
+#Utilizando random forests (LETRA E)
+
+set.seed(4)
 rf.carseats=randomForest(Sales~., data=Carseats, subset=train,mtry=4, importance=TRUE)
 yhat.rf=predict(rf.carseats, newdata=Carseats[-train,])
 mean((yhat.rf-carseats.test)^2)
+sqrt(mean((yhat.rf-carseats.test)^2))
 
+#Determinando quais variáveis são mais importantes
 importance(rf.carseats)
-
 varImpPlot(rf.carseats)
 
-#install.packages("gbm")
-library(gbm)
-set.seed(1)
-boost.carseats=gbm(Sales~., data=Carseats[train,], distribution = "gaussian", n.trees = 5000, interaction.depth = 4)
-
-summary(boost.carseats)
+summary(rf.carseats)
 
 par(mfrow=c(1,2))
-plot(boost.carseats, i="Price")
-plot(boost.carseats, i="ShelveLoc")
-
-yhat.boost=predict(boost.carseats, newdata=Carseats[-train,], n.trees = 5000)
-mean((yhat.boost-carseats.test)^2)
-
-boost.carseats=gbm(Sales~., data=Carseats[train,], distribution = "gaussian", n.trees = 5000, interaction.depth = 4, shrinkage = 0.2, verbose = F)
-
-yhat.boost=predict(boost.carseats, newdata=Carseats[-train,], n.trees = 5000)
-mean((yhat.boost-carseats.test)^2)
+plot(rf.carseats, i="Price")
+plot(rf.carseats, i="ShelveLoc")
