@@ -94,15 +94,13 @@ varImpPlot(bag.carseats)
 
 summary(bag.carseats)
 
-par(mfrow=c(1,2))
-plot(bag.carseats, i="Price")
-plot(bag.carseats, i="ShelveLoc")
-
 #Utilizando random forests (LETRA E)
 
 set.seed(4)
 rf.carseats=randomForest(Sales~., data=Carseats, subset=train,mtry=4, importance=TRUE)
 yhat.rf=predict(rf.carseats, newdata=Carseats[-train,])
+
+#Cálculo do Erro Médio Quadrático (MSE) e Raíz do Erro Médio Quadrático (RMSE)
 mean((yhat.rf-carseats.test)^2)
 sqrt(mean((yhat.rf-carseats.test)^2))
 
@@ -111,7 +109,3 @@ importance(rf.carseats)
 varImpPlot(rf.carseats)
 
 summary(rf.carseats)
-
-par(mfrow=c(1,2))
-plot(rf.carseats, i="Price")
-plot(rf.carseats, i="ShelveLoc")
