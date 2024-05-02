@@ -92,12 +92,10 @@ sqrt(mean((yhat.bag-carseats.test)^2))
 importance(bag.carseats)
 varImpPlot(bag.carseats)
 
-summary(bag.carseats)
-
 #Utilizando random forests (LETRA E)
 
 set.seed(4)
-rf.carseats=randomForest(Sales~., data=Carseats, subset=train,mtry=4, importance=TRUE)
+rf.carseats=randomForest(Sales~., data=Carseats, subset=train,mtry=3, importance=TRUE)
 yhat.rf=predict(rf.carseats, newdata=Carseats[-train,])
 
 #Cálculo do Erro Médio Quadrático (MSE) e Raíz do Erro Médio Quadrático (RMSE)
@@ -107,5 +105,3 @@ sqrt(mean((yhat.rf-carseats.test)^2))
 #Determinando quais variáveis são mais importantes
 importance(rf.carseats)
 varImpPlot(rf.carseats)
-
-summary(rf.carseats)
